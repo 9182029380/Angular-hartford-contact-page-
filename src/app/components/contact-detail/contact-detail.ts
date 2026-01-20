@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ContactService } from '../../services/contact';
@@ -11,75 +11,64 @@ import { Contact } from '../../models/contact.model';
   templateUrl: './contact-detail.html',
   styleUrl: './contact-detail.css'
 })
-export class ContactDetailComponent implements OnInit {
-  contact: Contact | null = null;
-  loading = true;
-  deleting = false;
+export class ContactDetailComponent {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private contactService = inject(ContactService);
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private contactService: ContactService
-  ) { }
+  // 🔹 Signals
+  contact = signal<Contact | null>(null);
+  loading = signal(true);
+  deleting = signal(false);
 
-  ngOnInit(): void {
-    // Use route.params observable to handle route changes
+  constructor() {
     this.route.paramMap.subscribe(params => {
       const employeeIdParam = params.get('employeeId');
-      console.log('Route param employeeId:', employeeIdParam);
       const employeeId = employeeIdParam ? Number(employeeIdParam) : null;
-      
+
       if (employeeId && !isNaN(employeeId) && employeeId > 0) {
-        this.loading = true;
-        this.contact = null;
-        
-        console.log('Fetching contact with Employee ID:', employeeId);
+        this.loading.set(true);
+        this.contact.set(null);
+
         this.contactService.getContactByEmployeeId(employeeId).subscribe({
           next: (data) => {
-            console.log('Contact loaded successfully:', data);
-            this.contact = data;
-            this.loading = false;
+            this.contact.set(data);
+            this.loading.set(false);
           },
-          error: (err) => {
-            console.error('Error loading contact:', err);
-            this.loading = false;
-            this.contact = null;
+          error: () => {
+            this.loading.set(false);
+            this.contact.set(null);
           }
         });
       } else {
-        console.error('Invalid employee ID:', employeeIdParam, 'Parsed as:', employeeId);
-        this.loading = false;
-        this.contact = null;
+        this.loading.set(false);
+        this.contact.set(null);
       }
     });
   }
 
   deleteContact(): void {
-    const employeeId = this.contact?.employeeId;
-    const contactName = this.contact?.name || 'this contact';
-    
+    const contact = this.contact();
+    const employeeId = contact?.employeeId;
+    const contactName = contact?.name || 'this contact';
+
     if (!employeeId || isNaN(employeeId) || employeeId <= 0) {
-      console.error('Invalid employee ID for deletion:', employeeId);
       alert('Cannot delete contact: Invalid Employee ID');
       return;
     }
-    
+
     if (confirm(`Are you sure you want to delete ${contactName} (Employee ID: ${employeeId})?`)) {
-      this.deleting = true;
-      console.log('Deleting contact with Employee ID:', employeeId);
-      
+      this.deleting.set(true);
+
       this.contactService.deleteContactByEmployeeId(employeeId).subscribe({
         next: () => {
-          console.log('Contact deleted successfully');
-          this.deleting = false;
+          this.deleting.set(false);
           this.router.navigate(['/contacts']);
         },
         error: (err) => {
-          console.error('Error deleting contact:', err);
-          this.deleting = false;
-          
-          const errorMessage = err?.message || 
-            (err?.status 
+          this.deleting.set(false);
+          const errorMessage = err?.message ||
+            (err?.status
               ? `Failed to delete contact. HTTP ${err.status}: ${err.statusText || 'Unknown error'}`
               : 'Failed to delete contact. Please check if JSON server is running.');
           alert(errorMessage);
@@ -89,20 +78,23 @@ export class ContactDetailComponent implements OnInit {
   }
 
   openWhatsApp(): void {
-    if (this.contact?.phone) {
-      window.open(`https://wa.me/${this.contact.phone.replace(/\D/g, '')}`, '_blank');
+    const phone = this.contact()?.phone;
+    if (phone) {
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
     }
   }
 
   openInstagram(): void {
-    if (this.contact?.instagram) {
-      window.open(`https://instagram.com/${this.contact.instagram}`, '_blank');
+    const instagram = this.contact()?.instagram;
+    if (instagram) {
+      window.open(`https://instagram.com/${instagram}`, '_blank');
     }
   }
 
   openLinkedIn(): void {
-    if (this.contact?.linkedin) {
-      window.open(`https://linkedin.com/in/${this.contact.linkedin}`, '_blank');
+    const linkedin = this.contact()?.linkedin;
+    if (linkedin) {
+      window.open(`https://linkedin.com/in/${linkedin}`, '_blank');
     }
   }
 }

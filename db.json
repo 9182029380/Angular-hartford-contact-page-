@@ -1,3 +1,18 @@
 {
-  "contacts": []
+  "contacts": [
+    {
+      "employeeId": 10704658,
+      "name": "sharath kumar",
+      "phone": "+919182092380",
+      "email": "pothulasharath452@gmail.com",
+      "photo": "https://avatars.githubusercontent.com/u/102147569?v=4",
+      "instagram": "sharathai",
+      "linkedin": "https://www.linkedin.com/in/kumar-p-089929246/",
+      "whatsapp": "9182092380",
+      "company": "FLEXIBILITY CLOUD SERVICES PRIVATE LIMITED",
+      "address": "2-19 vattem",
+      "notes": "nothing ",
+      "id": "8a2a"
+    }
+  ]
 }

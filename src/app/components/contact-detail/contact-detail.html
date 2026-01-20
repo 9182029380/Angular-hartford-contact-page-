@@ -1,80 +1,101 @@
-
-
-
 <div class="detail-container">
-  <div *ngIf="loading" class="loading">Loading contact details...</div>
+  @if (loading()) {
+    <div class="loading">Loading contact details...</div>
+  }
 
-  <div *ngIf="!loading && !contact" class="error-message">
-    <p>Contact not found or failed to load.</p>
-    <button routerLink="/contacts" class="back-btn">← Back to Contacts</button>
-  </div>
-
-  <div *ngIf="!loading && contact" class="contact-detail">
-    <div class="detail-header">
+  @if (!loading() && !contact()) {
+    <div class="error-message">
+      <p>Contact not found or failed to load.</p>
       <button routerLink="/contacts" class="back-btn">← Back to Contacts</button>
-      <div class="action-buttons">
-        <button [routerLink]="['/contacts', contact.employeeId, 'edit']" class="edit-btn">Edit</button>
-        <button 
-          (click)="deleteContact()" 
-          class="delete-btn"
-          [disabled]="deleting">
-          {{ deleting ? 'Deleting...' : 'Delete' }}
-        </button>
+    </div>
+  }
+
+  @if (!loading() && contact()) {
+    <div class="contact-detail">
+      <div class="detail-header">
+        <button routerLink="/contacts" class="back-btn">← Back to Contacts</button>
+        <div class="action-buttons">
+          <button
+            [routerLink]="['/contacts', contact()!.employeeId, 'edit']"
+            class="edit-btn">
+            Edit
+          </button>
+          <button
+            (click)="deleteContact()"
+            class="delete-btn"
+            [disabled]="deleting()">
+            {{ deleting() ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-content">
+        <div class="detail-image">
+          <img [src]="contact()!.photo" [alt]="contact()!.name" />
+        </div>
+
+        <div class="detail-info">
+          <h2>{{ contact()!.name }}</h2>
+
+          <div class="info-section">
+            <h3>Contact Information</h3>
+            @if (contact()!.employeeId) {
+              <div class="info-row">
+                <span class="label">Employee ID:</span>
+                <span class="value">{{ contact()!.employeeId }}</span>
+              </div>
+            }
+            <div class="info-row">
+              <span class="label">Phone:</span>
+              <span class="value">{{ contact()!.phone }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Email:</span>
+              <span class="value">{{ contact()!.email }}</span>
+            </div>
+            @if (contact()!.company) {
+              <div class="info-row">
+                <span class="label">Company:</span>
+                <span class="value">{{ contact()!.company }}</span>
+              </div>
+            }
+            @if (contact()!.address) {
+              <div class="info-row">
+                <span class="label">Address:</span>
+                <span class="value">{{ contact()!.address }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="info-section">
+            <h3>Social Media</h3>
+            <div class="social-buttons">
+              @if (contact()!.whatsapp) {
+                <button (click)="openWhatsApp()" class="social-btn whatsapp">
+                  WhatsApp
+                </button>
+              }
+              @if (contact()!.instagram) {
+                <button (click)="openInstagram()" class="social-btn instagram">
+                  Instagram
+                </button>
+              }
+              @if (contact()!.linkedin) {
+                <button (click)="openLinkedIn()" class="social-btn linkedin">
+                  LinkedIn
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (contact()!.notes) {
+            <div class="info-section">
+              <h3>Notes</h3>
+              <p>{{ contact()!.notes }}</p>
+            </div>
+          }
+        </div>
       </div>
     </div>
-
-    <div class="detail-content">
-      <div class="detail-image">
-        <img [src]="contact.photo" [alt]="contact.name" />
-      </div>
-
-      <div class="detail-info">
-        <h2>{{ contact.name }}</h2>
-
-        <div class="info-section">
-          <h3>Contact Information</h3>
-          <div class="info-row" *ngIf="contact.employeeId">
-            <span class="label">Employee ID:</span>
-            <span class="value">{{ contact.employeeId }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Phone:</span>
-            <span class="value">{{ contact.phone }}</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Email:</span>
-            <span class="value">{{ contact.email }}</span>
-          </div>
-          <div *ngIf="contact.company" class="info-row">
-            <span class="label">Company:</span>
-            <span class="value">{{ contact.company }}</span>
-          </div>
-          <div *ngIf="contact.address" class="info-row">
-            <span class="label">Address:</span>
-            <span class="value">{{ contact.address }}</span>
-          </div>
-        </div>
-
-        <div class="info-section">
-          <h3>Social Media</h3>
-          <div class="social-buttons">
-            <button *ngIf="contact.whatsapp" (click)="openWhatsApp()" class="social-btn whatsapp">
-              WhatsApp
-            </button>
-            <button *ngIf="contact.instagram" (click)="openInstagram()" class="social-btn instagram">
-              Instagram
-            </button>
-            <button *ngIf="contact.linkedin" (click)="openLinkedIn()" class="social-btn linkedin">
-              LinkedIn
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="contact.notes" class="info-section">
-          <h3>Notes</h3>
-          <p>{{ contact.notes }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  }
 </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContactService } from '../../services/contact';
@@ -11,44 +11,42 @@ import { Contact } from '../../models/contact.model';
   templateUrl: './contact-list.html',
   styleUrl: './contact-list.css'
 })
-export class ContactListComponent implements OnInit {
-  contacts: Contact[] = [];
-  loading = true;
-  deletingEmployeeId: number | null = null;
+export class ContactListComponent {
+  private contactService = inject(ContactService);
+  private router = inject(Router);
 
-  constructor(
-    private contactService: ContactService,
-    private router: Router
-  ) { }
+  // 🔹 Signals
+  contacts = signal<Contact[]>([]);
+  loading = signal(true);
+  deletingEmployeeId = signal<number | null>(null);
 
-  ngOnInit(): void {
+  constructor() {
     this.loadContacts();
   }
 
   loadContacts(): void {
+    this.loading.set(true);
     this.contactService.getContacts().subscribe({
       next: (data) => {
-        // JSON Server should always return contacts with IDs
-        // If a contact doesn't have an ID, log a warning
-        this.contacts = data.map((contact, index) => {
-          if (!contact.id) {
-            console.warn(`Contact at index ${index} has no ID:`, contact);
-          }
-          return contact;
-        });
-        console.log('Loaded contacts:', this.contacts.map(c => ({ id: c.id, name: c.name })));
-        this.loading = false;
+        this.contacts.set(
+          data.map((contact, index) => {
+            if (!contact.id) {
+              console.warn(`Contact at index ${index} has no ID:`, contact);
+            }
+            return contact;
+          })
+        );
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error loading contacts:', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
 
   viewContact(employeeId: number | undefined): void {
     if (employeeId !== undefined && employeeId !== null && !isNaN(employeeId)) {
-      console.log('Navigating to contact with employeeId:', employeeId);
       this.router.navigate(['/contacts', employeeId]).catch(err => {
         console.error('Navigation error:', err);
       });
@@ -75,35 +73,27 @@ export class ContactListComponent implements OnInit {
 
   deleteContact(employeeId: number | undefined, event: Event): void {
     event.stopPropagation();
-    
+
     if (!employeeId || isNaN(employeeId) || employeeId <= 0) {
-      console.error('Invalid employee ID for deletion:', employeeId);
       alert('Cannot delete contact: Invalid Employee ID');
       return;
     }
-    
-    // Find the contact to show its name in confirmation
-    const contactToDelete = this.contacts.find(c => c.employeeId === employeeId);
+
+    const contactToDelete = this.contacts().find(c => c.employeeId === employeeId);
     const contactName = contactToDelete?.name || 'this contact';
-    
+
     if (confirm(`Are you sure you want to delete ${contactName} (Employee ID: ${employeeId})?`)) {
-      this.deletingEmployeeId = employeeId;
-      console.log('=== DELETE ATTEMPT ===');
-      console.log('Deleting contact with Employee ID:', employeeId);
-      console.log('Contact name:', contactName);
-      
+      this.deletingEmployeeId.set(employeeId);
+
       this.contactService.deleteContactByEmployeeId(employeeId).subscribe({
         next: () => {
-          console.log('✓ Contact deleted successfully');
-          this.deletingEmployeeId = null;
+          this.deletingEmployeeId.set(null);
           this.loadContacts();
         },
         error: (deleteErr) => {
-          console.error('✗ Delete failed:', deleteErr);
-          this.deletingEmployeeId = null;
-          
-          const errorMessage = deleteErr?.message || 
-            (deleteErr?.status 
+          this.deletingEmployeeId.set(null);
+          const errorMessage = deleteErr?.message ||
+            (deleteErr?.status
               ? `Failed to delete contact. HTTP ${deleteErr.status}: ${deleteErr.statusText || 'Unknown error'}`
               : 'Failed to delete contact. Please check if JSON server is running.');
           alert(errorMessage);
